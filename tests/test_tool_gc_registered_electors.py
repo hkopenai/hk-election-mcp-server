@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock
-from hkopenai.hk_tech_mcp_server.tool_gc_registered_electors import (
+from hkopenai.hk_election_mcp_server.tool_gc_registered_electors import (
     fetch_gc_registered_electors_data,
     try_fetch_year_data,
     parse_csv,
@@ -22,7 +22,7 @@ class TestGCRegisteredElectors(unittest.TestCase):
         expected = {2015: 3693942}
         self.assertEqual(result, expected)
 
-    @patch('hkopenai.hk_tech_mcp_server.tool_gc_registered_electors.requests.get')
+    @patch('hkopenai.hk_election_mcp_server.tool_gc_registered_electors.requests.get')
     def test_try_fetch_year_data_success(self, mock_get):
         """Test fetching data for a year with successful response."""
         mock_response = Mock()
@@ -34,7 +34,7 @@ class TestGCRegisteredElectors(unittest.TestCase):
         expected = {2015: 3693942}
         self.assertEqual(result, expected)
 
-    @patch('hkopenai.hk_tech_mcp_server.tool_gc_registered_electors.requests.get')
+    @patch('hkopenai.hk_election_mcp_server.tool_gc_registered_electors.requests.get')
     def test_try_fetch_year_data_failure(self, mock_get):
         """Test fetching data for a year with failed response."""
         mock_response = Mock()
@@ -53,7 +53,7 @@ class TestGCRegisteredElectors(unittest.TestCase):
         result = fetch_gc_registered_electors_data(2008, 2010)
         self.assertEqual(result, [{"error": "Start year must be 2009 or later"}])
 
-    @patch('hkopenai.hk_tech_mcp_server.tool_gc_registered_electors.try_fetch_year_data')
+    @patch('hkopenai.hk_election_mcp_server.tool_gc_registered_electors.try_fetch_year_data')
     def test_fetch_gc_registered_electors_data_valid_range(self, mock_fetch):
         """Test fetching data with valid year range."""
         mock_fetch.side_effect = [
