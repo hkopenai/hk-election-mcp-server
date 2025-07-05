@@ -1,7 +1,15 @@
+"""
+Module for fetching and processing data on registered electors in Hong Kong's geographical constituencies.
+
+This module provides functions to retrieve and parse data from the voter registration website
+to get the number of registered electors for specified year ranges.
+"""
+
 import csv
 import io
 import requests
 from typing import Dict, List
+
 
 def fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[Dict]:
     """
@@ -12,10 +20,10 @@ def fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[Di
         return [{"error": "Start year must be 2009 or later"}]
     if start_year > end_year:
         return [{"error": "Start year must be less than or equal to end year"}]
-        
+
     data_dict: Dict[int, int] = {}
     current_year = start_year
-    
+
     while current_year <= end_year:
         if current_year not in data_dict:
             csv_data = try_fetch_year_data(current_year)
@@ -33,14 +41,18 @@ def fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[Di
                             data_dict[current_year] = csv_data[current_year]
                             break
         current_year += 1
-        
-    result = [{"year": year, "electors": count} for year, count in sorted(data_dict.items()) 
-              if start_year <= year <= end_year]
-              
+
+    result = [
+        {"year": year, "electors": count}
+        for year, count in sorted(data_dict.items())
+        if start_year <= year <= end_year
+    ]
+
     if not result:
         return [{"error": "No data found for the specified year range"}]
-              
+
     return result
+
 
 def try_fetch_year_data(year: int) -> Dict[int, int]:
     """
@@ -49,9 +61,9 @@ def try_fetch_year_data(year: int) -> Dict[int, int]:
     """
     urls = [
         f"https://www.voterregistration.gov.hk/eng/psi/csv/{year}_gc-no-of-registered-electors.csv",
-        f"https://www.voterregistration.gov.hk/eng/psi/csv/{year}_gc-no-of-registered-electors_en.csv"
+        f"https://www.voterregistration.gov.hk/eng/psi/csv/{year}_gc-no-of-registered-electors_en.csv",
     ]
-    
+
     for url in urls:
         try:
             response = requests.get(url, timeout=10)
@@ -63,6 +75,7 @@ def try_fetch_year_data(year: int) -> Dict[int, int]:
             continue
     return {}
 
+
 def parse_csv(content: str) -> Dict[int, int]:
     """
     Parse CSV content to extract year and number of registered electors.
@@ -70,7 +83,7 @@ def parse_csv(content: str) -> Dict[int, int]:
     result = {}
     reader = csv.reader(io.StringIO(content))
     header = next(reader, None)  # Skip header if exists
-    
+
     for row in reader:
         if len(row) >= 2:
             try:
@@ -79,17 +92,18 @@ def parse_csv(content: str) -> Dict[int, int]:
                 result[year] = count
             except (ValueError, IndexError):
                 continue
-                
+
     return result
+
 
 def get_gc_registered_electors(start_year: int = 2009, end_year: int = 2024) -> Dict:
     """
     Get the number of registered electors in Hong Kong's geographical constituencies by year range.
-    
+
     Args:
         start_year (int): Start year of the range (minimum 2009)
         end_year (int): End year of the range
-    
+
     Returns:
         Dictionary containing the data list, source, and note
     """
@@ -99,5 +113,5 @@ def get_gc_registered_electors(start_year: int = 2009, end_year: int = 2024) -> 
     return {
         "data": data,
         "source": "Registration and Electoral Office",
-        "note": "Data fetched from voterregistration.gov.hk"
+        "note": "Data fetched from voterregistration.gov.hk",
     }

@@ -1,3 +1,11 @@
+"""
+Module for creating and running the HK OpenAI Election MCP Server.
+
+This module provides functionality to set up a FastMCP server with tools related to
+Hong Kong election data, specifically for retrieving registered electors in geographical
+constituencies.
+"""
+
 import argparse
 from fastmcp import FastMCP
 from hkopenai.hk_election_mcp_server import tool_gc_registered_electors
@@ -6,7 +14,12 @@ from pydantic import Field
 
 
 def create_mcp_server():
-    """Create and configure the MCP server"""
+    """
+    Create and configure the MCP server.
+    
+    Returns:
+        FastMCP: Configured MCP server instance with election data tools.
+    """
     mcp = FastMCP(name="HK OpenAI election Server")
 
     @mcp.tool(
@@ -24,6 +37,12 @@ def create_mcp_server():
 
 
 def main():
+    """
+    Main function to run the HKO MCP Server.
+    
+    Parses command line arguments to determine the mode of operation (SSE or stdio)
+    and starts the server accordingly.
+    """
     parser = argparse.ArgumentParser(description="HKO MCP Server")
     parser.add_argument(
         "-s", "--sse", action="store_true", help="Run in SSE mode instead of stdio"
