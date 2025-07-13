@@ -51,5 +51,8 @@ def cli_main():
 
     main(host=host_final, port=port_final, sse=sse_final)
 
+from hkopenai_common.cli_utils import cli_main
+from .server import server
+
 if __name__ == "__main__":
-    cli_main()
+    cli_main(server, "HK Election MCP Server")
