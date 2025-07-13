@@ -7,8 +7,31 @@ to get the number of registered electors for specified year ranges.
 
 import csv
 import io
-import requests
 from typing import Dict, List
+import requests
+from pydantic import Field
+from typing_extensions import Annotated
+
+
+def register(mcp):
+    """Registers the registered electors tool with the FastMCP server."""
+    @mcp.tool(
+        description="Get the number of registered electors in Hong Kong's geographical constituencies by year range",
+    )
+    def get_gc_registered_electors(
+        start_year: Annotated[int, Field(description="Start year for data range")],
+        end_year: Annotated[int, Field(description="End year for data range")],
+    ) -> Dict:
+        """Get the number of registered electors in Hong Kong's geographical constituencies by year range.
+
+        Args:
+            start_year (int): Start year of the range (minimum 2009)
+            end_year (int): End year of the range
+
+        Returns:
+            Dictionary containing the data list, source, and note
+        """
+        return _get_gc_registered_electors(start_year, end_year)
 
 
 def fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[Dict]:
@@ -82,7 +105,7 @@ def parse_csv(content: str) -> Dict[int, int]:
     """
     result = {}
     reader = csv.reader(io.StringIO(content))
-    header = next(reader, None)  # Skip header if exists
+    next(reader, None)  # Skip header if exists
 
     for row in reader:
         if len(row) >= 2:
@@ -96,7 +119,7 @@ def parse_csv(content: str) -> Dict[int, int]:
     return result
 
 
-def get_gc_registered_electors(start_year: int = 2009, end_year: int = 2024) -> Dict:
+def _get_gc_registered_electors(start_year: int = 2009, end_year: int = 2024) -> Dict:
     """
     Get the number of registered electors in Hong Kong's geographical constituencies by year range.
 
@@ -115,3 +138,4 @@ def get_gc_registered_electors(start_year: int = 2009, end_year: int = 2024) -> 
         "source": "Registration and Electoral Office",
         "note": "Data fetched from voterregistration.gov.hk",
     }
+

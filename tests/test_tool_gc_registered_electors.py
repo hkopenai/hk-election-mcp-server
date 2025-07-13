@@ -6,12 +6,12 @@ registered electors in Hong Kong's geographical constituencies.
 """
 
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 from hkopenai.hk_election_mcp_server.tool_gc_registered_electors import (
     fetch_gc_registered_electors_data,
     try_fetch_year_data,
     parse_csv,
-    get_gc_registered_electors,
+    register,
 )
 
 
@@ -87,3 +87,40 @@ class TestGCRegisteredElectors(unittest.TestCase):
             {"year": 2017, "electors": 3805069},
         ]
         self.assertEqual(result, expected)
+
+    def test_register_tool(self):
+        """
+        Test the registration of the get_gc_registered_electors tool.
+
+        This test verifies that the register function correctly registers the tool
+        with the FastMCP server and that the registered tool calls the underlying
+        _get_gc_registered_electors function.
+        """
+        mock_mcp = MagicMock()
+
+        # Call the register function
+        register(mock_mcp)
+
+        # Verify that mcp.tool was called with the correct description
+        mock_mcp.tool.assert_called_once_with(
+            description="Get the number of registered electors in Hong Kong's geographical constituencies by year range",
+        )
+
+        # Get the mock that represents the decorator returned by mcp.tool
+        mock_decorator = mock_mcp.tool.return_value
+
+        # Verify that the mock decorator was called once (i.e., the function was decorated)
+        mock_decorator.assert_called_once()
+
+        # The decorated function is the first argument of the first call to the mock_decorator
+        decorated_function = mock_decorator.call_args[0][0]
+
+        # Verify the name of the decorated function
+        self.assertEqual(decorated_function.__name__, "get_gc_registered_electors")
+
+        # Call the decorated function and verify it calls _get_gc_registered_electors
+        with patch(
+            "hkopenai.hk_election_mcp_server.tool_gc_registered_electors._get_gc_registered_electors"
+        ) as mock_get_gc_registered_electors:
+            decorated_function(start_year=2018, end_year=2019)
+            mock_get_gc_registered_electors.assert_called_once_with(2018, 2019)
