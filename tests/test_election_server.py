@@ -7,18 +7,19 @@ of the MCP server.
 
 import unittest
 from unittest.mock import patch, Mock
-from hkopenai.hk_election_mcp_server.server import create_mcp_server
+from hkopenai.hk_election_mcp_server.server import server
 
 
 class TestApp(unittest.TestCase):
     """
     Test class for verifying the MCP server functionality.
-    
+
     This class contains test cases to ensure the server is created correctly
     and tools are properly registered and callable.
     """
+
     @patch("hkopenai.hk_election_mcp_server.server.FastMCP")
-    @patch("hkopenai.hk_election_mcp_server.tool_gc_registered_electors.register")
+    @patch("hkopenai.hk_election_mcp_server.tools.gc_registered_electors.register")
     def test_create_mcp_server(self, mock_register, mock_fastmcp):
         """
         Test the creation of the MCP server and tool registration.
@@ -35,7 +36,7 @@ class TestApp(unittest.TestCase):
         mock_fastmcp.return_value = mock_server
 
         # Test server creation
-        create_mcp_server()
+        server()
 
         # Verify server creation
         mock_fastmcp.assert_called_once()

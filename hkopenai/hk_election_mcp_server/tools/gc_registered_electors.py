@@ -8,13 +8,14 @@ to get the number of registered electors for specified year ranges.
 import csv
 import io
 from typing import Dict, List
-import requests
+from hkopenai_common.csv_utils import fetch_csv_from_url
 from pydantic import Field
 from typing_extensions import Annotated
 
 
 def register(mcp):
     """Registers the registered electors tool with the FastMCP server."""
+
     @mcp.tool(
         description="Get the number of registered electors in Hong Kong's geographical constituencies by year range",
     )
@@ -34,7 +35,7 @@ def register(mcp):
         return _get_gc_registered_electors(start_year, end_year)
 
 
-def fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[Dict]:
+def _fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[Dict] | Dict[str, str]:
     """
     Fetch and aggregate data on the number of registered electors in Hong Kong's geographical constituencies
     for the given year range.
@@ -48,21 +49,24 @@ def fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[Di
     current_year = start_year
 
     while current_year <= end_year:
-        if current_year not in data_dict:
-            csv_data = try_fetch_year_data(current_year)
-            if csv_data:
-                for year, count in csv_data.items():
-                    if year not in data_dict:
-                        data_dict[year] = count
-            else:
-                # If no data for the specific year CSV, try nearby years for multi-year data
-                for offset in [-1, 1, -2, 2]:
-                    test_year = current_year + offset
-                    if test_year >= 2009 and test_year <= end_year:
-                        csv_data = try_fetch_year_data(test_year)
-                        if csv_data and current_year in csv_data:
-                            data_dict[current_year] = csv_data[current_year]
-                            break
+        csv_data = _try_fetch_year_data(current_year)
+        if "error" in csv_data:
+            return csv_data  # Propagate the error
+        if csv_data:
+            for year, count in csv_data.items():
+                if year not in data_dict:
+                    data_dict[year] = count
+        else:
+            # If no data for the specific year CSV, try nearby years for multi-year data
+            for offset in [-1, 1, -2, 2]:
+                test_year = current_year + offset
+                if test_year >= 2009 and test_year <= end_year:
+                    csv_data = _try_fetch_year_data(test_year)
+                    if "error" in csv_data:
+                        return csv_data  # Propagate the error
+                    if csv_data and current_year in csv_data:
+                        data_dict[current_year] = csv_data[current_year]
+                        break
         current_year += 1
 
     result = [
@@ -77,7 +81,7 @@ def fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[Di
     return result
 
 
-def try_fetch_year_data(year: int) -> Dict[int, int]:
+def _try_fetch_year_data(year: int) -> Dict[int, int] | Dict[str, str]:
     """
     Attempt to fetch data for a specific year, trying both URL formats.
     Returns a dictionary of year to elector count.
@@ -88,34 +92,30 @@ def try_fetch_year_data(year: int) -> Dict[int, int]:
     ]
 
     for url in urls:
-        try:
-            response = requests.get(url, timeout=10)
-            if response.status_code == 200:
-                # Handle UTF-8 with BOM
-                content = response.content.decode("utf-8-sig")
-                return parse_csv(content)
-        except (requests.exceptions.RequestException, UnicodeDecodeError):
-            continue
+        csv_data = fetch_csv_from_url(url, encoding="utf-8-sig", timeout=10)
+        if "error" in csv_data:
+            return csv_data  # Propagate the error
+        if csv_data:
+            return _parse_csv_data(csv_data)
     return {}
 
 
-def parse_csv(content: str) -> Dict[int, int]:
+def _parse_csv_data(data: List[Dict]) -> Dict[int, int]:
     """
     Parse CSV content to extract year and number of registered electors.
     """
     result = {}
-    reader = csv.reader(io.StringIO(content))
-    next(reader, None)  # Skip header if exists
-
-    for row in reader:
+    for row in data:
         if len(row) >= 2:
             try:
-                year = int(row[0].strip())
-                count = int(row[1].strip().replace(",", ""))
+                # Assuming the first column is year and second is count
+                year_key = list(row.keys())[0]
+                count_key = list(row.keys())[1]
+                year = int(row[year_key].strip())
+                count = int(row[count_key].strip().replace(",", ""))
                 result[year] = count
             except (ValueError, IndexError):
                 continue
-
     return result
 
 
@@ -130,7 +130,7 @@ def _get_gc_registered_electors(start_year: int = 2009, end_year: int = 2024) ->
     Returns:
         Dictionary containing the data list, source, and note
     """
-    data = fetch_gc_registered_electors_data(start_year, end_year)
+    data = _fetch_gc_registered_electors_data(start_year, end_year)
     if "error" in data[0]:
         return {"error": data[0]["error"]}
     return {
@@ -138,4 +138,3 @@ def _get_gc_registered_electors(start_year: int = 2009, end_year: int = 2024) ->
         "source": "Registration and Electoral Office",
         "note": "Data fetched from voterregistration.gov.hk",
     }
-
