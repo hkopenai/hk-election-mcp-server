@@ -50,7 +50,6 @@ def _fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[D
 
     while current_year <= end_year:
         csv_data = _try_fetch_year_data(current_year)
-        print(f"DEBUG: Type of csv_data: {type(csv_data)}, value: {csv_data}")
         if "error" in csv_data:
             return csv_data  # Propagate the error
         if csv_data:
