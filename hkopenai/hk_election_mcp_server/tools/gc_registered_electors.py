@@ -41,15 +41,16 @@ def _fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[D
     for the given year range.
     """
     if start_year < 2009:
-        return [{"error": "Start year must be 2009 or later"}]
+        return {"error": "Start year must be 2009 or later"}
     if start_year > end_year:
-        return [{"error": "Start year must be less than or equal to end year"}]
+        return {"error": "Start year must be less than or equal to end year"}
 
     data_dict: Dict[int, int] = {}
     current_year = start_year
 
     while current_year <= end_year:
         csv_data = _try_fetch_year_data(current_year)
+        print(f"DEBUG: Type of csv_data: {type(csv_data)}, value: {csv_data}")
         if "error" in csv_data:
             return csv_data  # Propagate the error
         if csv_data:
@@ -76,7 +77,7 @@ def _fetch_gc_registered_electors_data(start_year: int, end_year: int) -> List[D
     ]
 
     if not result:
-        return [{"error": "No data found for the specified year range"}]
+        return {"error": "No data found for the specified year range"}
 
     return result
 
@@ -131,8 +132,8 @@ def _get_gc_registered_electors(start_year: int = 2009, end_year: int = 2024) ->
         Dictionary containing the data list, source, and note
     """
     data = _fetch_gc_registered_electors_data(start_year, end_year)
-    if "error" in data[0]:
-        return {"error": data[0]["error"]}
+    if isinstance(data, dict) and "error" in data:
+        return data
     return {
         "data": data,
         "source": "Registration and Electoral Office",

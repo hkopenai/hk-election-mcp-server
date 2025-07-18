@@ -32,16 +32,17 @@ class TestGCRegisteredElectors(unittest.TestCase):
         for a given year range, handles missing years, and propagates errors.
         """
         # Mock data for _try_fetch_year_data
-        mock_try_fetch_year_data.side_effect = [
-            {2019: 3800000},  # Data for 2019
-            {2020: 4000000},  # Data for 2020
-            {},  # No data for 2021
-            {2022: 4200000},  # Data for 2022
-        ]
+        mock_try_fetch_year_data.side_effect = lambda year: {
+            2019: {2019: 3800000},
+            2020: {2020: 4000000},
+            2022: {2022: 4200000},
+        }.get(year, {})
 
         # Test successful data retrieval for a range
         result = _get_gc_registered_electors(2019, 2022)
         self.assertIn("data", result)
+        self.assertIn("source", result)
+        self.assertIn("note", result)
         self.assertEqual(len(result["data"]), 3)  # 2019, 2020, 2022
         self.assertEqual(result["data"][0]["year"], 2019)
         self.assertEqual(result["data"][0]["electors"], 3800000)
@@ -54,15 +55,17 @@ class TestGCRegisteredElectors(unittest.TestCase):
         self.assertEqual(result, {"error": "Fetch failed"})
 
         # Test invalid start year
+        mock_try_fetch_year_data.side_effect = [] # Reset mock
         result = _get_gc_registered_electors(2000, 2010)
         self.assertEqual(result, {"error": "Start year must be 2009 or later"})
 
         # Test start year greater than end year
+        mock_try_fetch_year_data.side_effect = [] # Reset mock
         result = _get_gc_registered_electors(2010, 2009)
         self.assertEqual(result, {"error": "Start year must be less than or equal to end year"})
 
         # Test no data found for the specified range
-        mock_try_fetch_year_data.side_effect = [{}, {}]
+        mock_try_fetch_year_data.side_effect = lambda year: {}
         result = _get_gc_registered_electors(2023, 2024)
         self.assertEqual(result, {"error": "No data found for the specified year range"})
 
