@@ -1,11 +1,15 @@
 """
-Main entry point for the HK OpenAI Election MCP Server.
-
-This module serves as the entry point to run the MCP server application.
+Console-script entry point for hkopenai.hk_election_mcp_server.
 """
 
 from hkopenai_common.cli_utils import cli_main
 from .server import server
 
+
+def main():
+    """Console-script entry point for the hk election mcp server."""
+    cli_main(server, "hk election mcp server")
+
+
 if __name__ == "__main__":
-    cli_main(server, "HK Election MCP Server")
+    main()
